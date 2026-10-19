@@ -1,0 +1,15 @@
+.git
+.env*
+web/node_modules
+web/test-results
+web/playwright-report
+bin
+.terraform
+*.tfstate*
+
+.local
+test-results
+web/playwright-report
+**/__pycache__
+**/.terraform
+*.tfplan

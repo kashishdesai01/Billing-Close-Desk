@@ -1,0 +1,57 @@
+name: billing-close-desk
+services:
+  postgres:
+    image: postgres:16.10-alpine
+    environment:
+      POSTGRES_PASSWORD: desk-local-only
+      POSTGRES_DB: desk
+    ports: ["127.0.0.1:55432:5432"]
+    volumes: ["desk-data:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d desk"]
+      interval: 2s
+      timeout: 2s
+      retries: 30
+  migrate:
+    build: .
+    command: ["-mode", "migrate"]
+    environment: &env
+      DATABASE_URL: postgres://postgres:desk-local-only@postgres:5432/desk?sslmode=disable
+      DEMO_PERSONAS: "true"
+      ERP_URL: http://erpsim:8091
+      ERP_TOKEN: local-synthetic-erp-token-change-me
+      WORKER_TOKEN: local-worker-token-change-me-32-characters
+      APP_ORIGIN: http://127.0.0.1:8090
+      LISTEN_ADDR: 0.0.0.0:8090
+    depends_on:
+      postgres: {condition: service_healthy}
+  seed:
+    build: .
+    command: ["-mode", "seed"]
+    environment: *env
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+  erpsim:
+    build: .
+    entrypoint: ["/app/erpsim"]
+    environment:
+      DATABASE_URL: postgres://postgres:desk-local-only@postgres:5432/desk?sslmode=disable
+      ERP_TOKEN: local-synthetic-erp-token-change-me
+      ERP_ADDR: 0.0.0.0:8091
+    depends_on:
+      seed: {condition: service_completed_successfully}
+  api:
+    build: .
+    environment: *env
+    ports: ["127.0.0.1:8090:8090"]
+    depends_on:
+      erpsim: {condition: service_started}
+  worker:
+    build: .
+    entrypoint: ["/app/desk"]
+    command: ["-mode", "worker"]
+    environment: *env
+    depends_on:
+      seed: {condition: service_completed_successfully}
+volumes:
+  desk-data:
