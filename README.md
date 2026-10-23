@@ -2,8 +2,6 @@
 
 A finance operations console that turns delivered advertising usage into approved invoices, controlled credits, and a reconciled monthly close.
 
-![Billing Close Desk dashboard](docs/assets/dashboard.png)
-
 ## Features
 
 - **Usage-based billing:** monthly CPM pricing with exact six-decimal rates, frozen usage snapshots, and rounding to cents.
